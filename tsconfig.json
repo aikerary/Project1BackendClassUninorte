@@ -1,28 +1,42 @@
 {
   "compilerOptions": {
-    // Enable latest features
-    "lib": ["ESNext", "DOM"],
+    // Configuración base
+    "lib": ["ESNext"],
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "NodeNext",
     "moduleDetection": "force",
-    "jsx": "react-jsx",
     "allowJs": true,
-
-    // Bundler mode
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-
-    // Best practices
+    
+    // Configuración específica para Node.js
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    
+    // Configuración de importaciones
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
+    
+    // Características de TypeScript
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
-
-    // Some stricter flags (disabled by default)
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    // Habilitar emisión para producción
+    "noEmit": false,
+    
+    // Control de código no utilizado
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
-
+    "noPropertyAccessFromIndexSignature": false,
+    
+    // Soporte para ESM
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
