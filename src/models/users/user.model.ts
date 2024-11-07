@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import type { Permission } from '../types.js';
 
 export interface IUser extends mongoose.Document {
+  _id: mongoose.Types.ObjectId;
   email: string;
   password: string;
   name: string;

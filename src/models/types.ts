@@ -11,3 +11,24 @@ export interface BaseDocument {
   updatedAt: Date;
   isActive: boolean;
 }
+
+export interface BookFilters {
+  genre?: string;
+  publisher?: string;
+  author?: string;
+  title?: string;
+  isAvailable?: boolean;
+  publishDateStart?: string;
+  publishDateEnd?: string;
+  includeInactive?: boolean;
+}
+
+export interface ReservationFilters {
+  userId?: string;
+  bookId?: string;
+  status?: 'active' | 'completed' | 'cancelled';
+  reservationDate?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+}
