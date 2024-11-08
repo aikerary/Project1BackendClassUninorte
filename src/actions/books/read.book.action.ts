@@ -1,41 +1,40 @@
 import { BookModel, toBook } from '../../models/books/book.model.js';
 import type { Book, BookFilters } from '../../models/types.js';
 
+// src/actions/books/read.book.action.ts
 export class ReadBookAction {
-  async findById(bookId: string): Promise<Book | null> {
+  async findById(id: string): Promise<Book | null> {
     try {
-      const doc = await BookModel.findById(bookId);
-      return doc ? toBook(doc) : null;
+      const book = await BookModel.findById(id);
+      return book ? toBook(book) : null;
     } catch (error) {
-      throw new Error('Failed to fetch book');
+      throw new Error('Error finding book');
     }
   }
 
-  async search(filters: BookFilters, page: number, limit: number) {
+  async search(filters: BookFilters, page: number = 1, limit: number = 10) {
     try {
       const query: any = {};
       
-      if (filters.genre) query.genre = new RegExp(filters.genre, 'i');
-      if (filters.publisher) query.publisher = new RegExp(filters.publisher, 'i');
-      if (filters.author) query.author = new RegExp(filters.author, 'i');
-      if (filters.title) query.title = new RegExp(filters.title, 'i');
-      if (filters.isAvailable !== undefined) query.isAvailable = filters.isAvailable;
-      if (filters.publishDateStart || filters.publishDateEnd) {
-        query.publishDate = {};
-        if (filters.publishDateStart) query.publishDate.$gte = new Date(filters.publishDateStart);
-        if (filters.publishDateEnd) query.publishDate.$lte = new Date(filters.publishDateEnd);
-      }
-      
-      if (!filters.includeInactive) {
+      // Only add isActive filter if explicitly requested
+      if (filters.includeInactive === false) {
         query.isActive = true;
       }
 
+      console.log('Search query:', JSON.stringify(query)); // Debug log
+      
       const skip = (page - 1) * limit;
       
       const [docs, total] = await Promise.all([
-        BookModel.find(query).skip(skip).limit(limit).sort({ createdAt: -1 }),
+        BookModel.find(query)
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 })
+          .select('-__v'),
         BookModel.countDocuments(query)
       ]);
+
+      console.log('Found documents:', docs.length); // Debug log
 
       return {
         books: docs.map(toBook),
@@ -44,6 +43,7 @@ export class ReadBookAction {
         pages: Math.ceil(total / limit)
       };
     } catch (error) {
+      console.error('Search error:', error); // Debug log
       throw new Error('Failed to search books');
     }
   }

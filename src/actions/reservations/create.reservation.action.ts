@@ -7,16 +7,21 @@ export const createReservationAction = async (req: Request, res: Response): Prom
     const { bookId } = req.body;
     const userId = req.user!.userId;
 
-    const book = await BookModel.findById(bookId);
-    if (!book) {
-      res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-      return;
-    }
+    // Use findOneAndUpdate to atomically check and update the book
+    const book = await BookModel.findOneAndUpdate(
+      {
+        _id: bookId,
+        availableCopies: { $gt: 0 },
+        isActive: true
+      },
+      {
+        $inc: { availableCopies: -1 },
+        $set: { isAvailable: false }
+      },
+      { new: true }
+    );
 
-    if (!book.isAvailable) {
+    if (!book) {
       res.status(400).json({
         success: false,
         error: 'Book is not available for reservation'
@@ -24,6 +29,7 @@ export const createReservationAction = async (req: Request, res: Response): Prom
       return;
     }
 
+    // If book was found and updated, create the reservation
     const reservation = await ReservationModel.create({
       userId,
       bookId,
@@ -31,13 +37,23 @@ export const createReservationAction = async (req: Request, res: Response): Prom
       status: 'active'
     });
 
-    await BookModel.findByIdAndUpdate(bookId, { isAvailable: false });
+    // Update isAvailable based on availableCopies
+    if (book.availableCopies === 0) {
+      await BookModel.findByIdAndUpdate(bookId, { isAvailable: false });
+    }
 
     res.status(201).json({
       success: true,
-      data: reservation
+      data: {
+        ...reservation.toObject(),
+        book: {
+          availableCopies: book.availableCopies,
+          totalCopies: book.totalCopies
+        }
+      }
     });
   } catch (error) {
+    console.error('Reservation error:', error);
     res.status(500).json({
       success: false,
       error: 'Error creating reservation'

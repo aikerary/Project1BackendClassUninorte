@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { validationResult } from 'express-validator';
 import { CreateBookAction } from '../../actions/books/create.book.action.js';
 import { ReadBookAction } from '../../actions/books/read.book.action.js';
 import { UpdateBookAction } from '../../actions/books/update.book.action.js';
@@ -11,8 +12,17 @@ export class BookController {
   private updateBookAction = new UpdateBookAction();
   private deleteBookAction = new DeleteBookAction();
 
-  async createBook(req: Request, res: Response): Promise<void> {
+  createBook = async (req: Request, res: Response): Promise<void> => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({
+          success: false,
+          errors: errors.array()
+        });
+        return;
+      }
+
       const book = await this.createBookAction.execute(req.body);
       
       res.status(201).json({
@@ -20,14 +30,17 @@ export class BookController {
         data: book
       });
     } catch (error) {
-      res.status(500).json({
+      const status = error instanceof Error && error.message.includes('duplicate') ? 409 : 500;
+      const message = error instanceof Error ? error.message : 'Error creating book';
+      
+      res.status(status).json({
         success: false,
-        error: 'Error creating book'
+        error: message
       });
     }
   }
 
-  async getBookById(req: Request, res: Response): Promise<void> {
+  getBookById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { bookId } = req.params;
       
@@ -52,7 +65,7 @@ export class BookController {
     }
   }
 
-  async searchBooks(req: Request, res: Response): Promise<void> {
+  searchBooks = async (req: Request, res: Response): Promise<void> => {
     try {
       const {
         genre,
@@ -103,7 +116,7 @@ export class BookController {
     }
   }
 
-  async updateBook(req: Request, res: Response): Promise<void> {
+  updateBook = async (req: Request, res: Response): Promise<void> => {
     try {
       const { bookId } = req.params;
       const updates = req.body;
@@ -130,7 +143,7 @@ export class BookController {
     }
   }
 
-  async deleteBook(req: Request, res: Response): Promise<void> {
+  deleteBook = async (req: Request, res: Response): Promise<void> => {
     try {
       const { bookId } = req.params;
       

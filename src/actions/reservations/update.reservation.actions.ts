@@ -6,32 +6,42 @@ export const completeReservationAction = async (req: Request, res: Response): Pr
   try {
     const { reservationId } = req.params;
 
-    const reservation = await ReservationModel.findById(reservationId);
+    const reservation = await ReservationModel.findOneAndUpdate(
+      { _id: reservationId, status: 'active' },
+      { 
+        status: 'completed',
+        returnDate: new Date()
+      },
+      { new: true }
+    );
+
     if (!reservation) {
       res.status(404).json({
         success: false,
-        error: 'Reservation not found'
+        error: 'Active reservation not found'
       });
       return;
     }
 
-    if (reservation.status !== 'active') {
-      res.status(400).json({
-        success: false,
-        error: 'Reservation is not active'
-      });
-      return;
-    }
+    // Update book's available copies and availability status
+    const book = await BookModel.findOneAndUpdate(
+      { _id: reservation.bookId },
+      {
+        $inc: { availableCopies: 1 },
+        $set: { isAvailable: true }
+      },
+      { new: true }
+    );
 
-    reservation.status = 'completed';
-    reservation.returnDate = new Date();
-    await reservation.save();
-
-    await BookModel.findByIdAndUpdate(reservation.bookId, { isAvailable: true });
-
-    res.status(200).json({
+    res.json({
       success: true,
-      data: reservation
+      data: {
+        reservation,
+        book: {
+          availableCopies: book?.availableCopies,
+          totalCopies: book?.totalCopies
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({

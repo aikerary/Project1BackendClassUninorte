@@ -11,9 +11,15 @@ const bookController = new BookController();
 const createBookValidation = [
   body('title').trim().notEmpty(),
   body('author').trim().notEmpty(),
+  body('isbn').trim().notEmpty(),
   body('genre').trim().notEmpty(),
   body('publishDate').isISO8601().toDate(),
-  body('publisher').trim().notEmpty()
+  body('publisher').trim().notEmpty(),
+  body('description').trim().notEmpty(),
+  body('totalCopies').isInt({ min: 0 }),
+  body('availableCopies').isInt({ min: 0 }).custom((value, { req }) => {
+    return value <= req.body.totalCopies;
+  })
 ];
 
 // Validación de búsqueda

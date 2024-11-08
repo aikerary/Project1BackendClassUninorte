@@ -13,6 +13,7 @@ export interface BaseDocument {
 }
 
 export interface Book extends BaseDocument {
+  id?: string;
   title: string;
   author: string;
   isbn: string;
