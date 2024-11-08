@@ -12,6 +12,20 @@ export interface BaseDocument {
   isActive: boolean;
 }
 
+export interface Book extends BaseDocument {
+  title: string;
+  author: string;
+  isbn: string;
+  genre: string;
+  publisher: string;
+  publishDate: Date;
+  description?: string;
+  isAvailable: boolean;
+  coverImage?: string;
+  totalCopies: number;
+  availableCopies: number;
+}
+
 export interface BookFilters {
   genre?: string;
   publisher?: string;

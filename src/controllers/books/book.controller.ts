@@ -1,13 +1,19 @@
-// src/controllers/books/book.controller.ts
 import { Request, Response } from 'express';
-import { BookModel } from '../../models/books/book.model.js';
+import { CreateBookAction } from '../../actions/books/create.book.action.js';
+import { ReadBookAction } from '../../actions/books/read.book.action.js';
+import { UpdateBookAction } from '../../actions/books/update.book.action.js';
+import { DeleteBookAction } from '../../actions/books/delete.book.action.js';
 import type { BookFilters } from '../../models/types.js';
 
 export class BookController {
-  // Crear libro
+  private createBookAction = new CreateBookAction();
+  private readBookAction = new ReadBookAction();
+  private updateBookAction = new UpdateBookAction();
+  private deleteBookAction = new DeleteBookAction();
+
   async createBook(req: Request, res: Response): Promise<void> {
     try {
-      const book = await BookModel.create(req.body);
+      const book = await this.createBookAction.execute(req.body);
       
       res.status(201).json({
         success: true,
@@ -21,12 +27,11 @@ export class BookController {
     }
   }
 
-  // Obtener libro por ID
   async getBookById(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       
-      const book = await BookModel.findById(bookId);
+      const book = await this.readBookAction.findById(bookId);
       if (!book) {
         res.status(404).json({
           success: false,
@@ -47,7 +52,6 @@ export class BookController {
     }
   }
 
-  // Buscar libros con filtros
   async searchBooks(req: Request, res: Response): Promise<void> {
     try {
       const {
@@ -63,44 +67,31 @@ export class BookController {
         limit = 10
       } = req.query;
 
-      const filters: BookFilters = {};
-      const query: any = {};
+      const filters: BookFilters = {
+        genre: genre as string,
+        publisher: publisher as string,
+        author: author as string,
+        title: title as string,
+        isAvailable: isAvailable === 'true',
+        publishDateStart: publishDateStart as string,
+        publishDateEnd: publishDateEnd as string,
+        includeInactive: includeInactive === 'true'
+      };
 
-      // Aplicar filtros
-      if (genre) query.genre = new RegExp(genre as string, 'i');
-      if (publisher) query.publisher = new RegExp(publisher as string, 'i');
-      if (author) query.author = new RegExp(author as string, 'i');
-      if (title) query.title = new RegExp(title as string, 'i');
-      if (isAvailable !== undefined) query.isAvailable = isAvailable === 'true';
-      if (publishDateStart || publishDateEnd) {
-        query.publishDate = {};
-        if (publishDateStart) query.publishDate.$gte = new Date(publishDateStart as string);
-        if (publishDateEnd) query.publishDate.$lte = new Date(publishDateEnd as string);
-      }
-      
-      // Incluir/excluir inactivos
-      if (!includeInactive || includeInactive === 'false') {
-        query.isActive = true;
-      }
-
-      const skip = (Number(page) - 1) * Number(limit);
-      
-      const [books, total] = await Promise.all([
-        BookModel.find(query)
-          .skip(skip)
-          .limit(Number(limit))
-          .sort({ createdAt: -1 }),
-        BookModel.countDocuments(query)
-      ]);
+      const result = await this.readBookAction.search(
+        filters,
+        Number(page),
+        Number(limit)
+      );
 
       res.json({
         success: true,
         data: {
-          books,
+          books: result.books,
           pagination: {
-            total,
-            page: Number(page),
-            pages: Math.ceil(total / Number(limit))
+            total: result.total,
+            page: result.page,
+            pages: result.pages
           }
         }
       });
@@ -112,17 +103,12 @@ export class BookController {
     }
   }
 
-  // Actualizar libro
   async updateBook(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       const updates = req.body;
       
-      const book = await BookModel.findByIdAndUpdate(
-        bookId,
-        { $set: updates },
-        { new: true }
-      );
+      const book = await this.updateBookAction.execute(bookId, updates);
 
       if (!book) {
         res.status(404).json({
@@ -144,16 +130,11 @@ export class BookController {
     }
   }
 
-  // Soft delete de libro
   async deleteBook(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       
-      const book = await BookModel.findByIdAndUpdate(
-        bookId,
-        { $set: { isActive: false } },
-        { new: true }
-      );
+      const book = await this.deleteBookAction.execute(bookId);
 
       if (!book) {
         res.status(404).json({

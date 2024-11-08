@@ -1,18 +1,10 @@
 import mongoose from 'mongoose';
+import type { Book } from '../types.js';
 
-export interface IBook extends mongoose.Document {
-  title: string;
-  author: string;
-  genre: string;
-  publishDate: Date;
-  publisher: string;
-  isAvailable: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Interfaz para el documento de Mongoose
+export interface IBook extends Omit<Book, keyof mongoose.Document>, mongoose.Document {}
 
-const bookSchema = new mongoose.Schema<IBook>({
+const bookSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -51,3 +43,24 @@ const bookSchema = new mongoose.Schema<IBook>({
 });
 
 export const BookModel = mongoose.model<IBook>('Book', bookSchema);
+
+// Función auxiliar para convertir documento a tipo Book
+export const toBook = (doc: IBook): Book => {
+  const book = doc.toObject();
+  return {
+    title: book.title,
+    author: book.author,
+    isbn: book.isbn,
+    genre: book.genre,
+    publisher: book.publisher,
+    publishDate: book.publishDate,
+    description: book.description,
+    isAvailable: book.isAvailable,
+    coverImage: book.coverImage,
+    totalCopies: book.totalCopies,
+    availableCopies: book.availableCopies,
+    isActive: book.isActive,
+    createdAt: book.createdAt,
+    updatedAt: book.updatedAt
+  };
+};
