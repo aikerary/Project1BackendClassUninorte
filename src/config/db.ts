@@ -12,15 +12,25 @@ if (!CONNECTION_STRING || !DB_NAME) {
 
 const MONGODB_URI = `${CONNECTION_STRING}${DB_NAME}`;
 
-export async function connectDB(): Promise<void> {
+export const connectDB = async () => {
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log(`Successfully connected to MongoDB database: ${DB_NAME}`);
-  } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
+    // Replace with your actual Atlas connection string
+    const uri = MONGODB_URI || 'mongodb+srv://<username>:<password>@<cluster>.mongodb.net/biblioteca';
+    
+    await mongoose.connect(uri, {
+      // Atlas specific options
+      retryWrites: true,
+      w: 'majority',
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    });
+    
+    console.log('MongoDB Atlas Connected...');
+  } catch (err) {
+    console.error('MongoDB Atlas connection error:', err);
     process.exit(1);
   }
-}
+};
 
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected');
