@@ -1,5 +1,7 @@
 // src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/constants';
 import { verifyToken, type JWTPayload } from '../config/auth.js';
 import type { Permission } from '../models/types.js';
 
@@ -12,57 +14,62 @@ declare global {
   }
 }
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ message: 'Authentication token required' });
+    res.status(401).json({ error: 'No token provided' });
+    return;
   }
 
-  try {
-    const user = verifyToken(token);
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      res.status(403).json({ error: 'Invalid token' });
+      return;
+    }
+
     req.user = user;
     next();
-  } catch (error) {
-    return res.status(403).json({ message: 'Invalid or expired token' });
-  }
-}
+  });
+};
 
-export function requirePermissions(permissions: Permission[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export const requirePermissions = (permissions: Permission[]) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
 
     const hasPermission = permissions.every(permission =>
-      req.user!.permissions.includes(permission)
+      req.user?.permissions.includes(permission)
     );
 
     if (!hasPermission) {
-      return res.status(403).json({ message: 'Insufficient permissions' });
+      res.status(403).json({ error: 'Insufficient permissions' });
+      return;
     }
 
     next();
   };
-}
+};
 
-export function isSameUserOrHasPermission(permission: Permission) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export const isSameUserOrHasPermission = (permission: Permission) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
 
-    const requestedUserId = req.params.userId || req.body.userId;
-    const isOwnUser = req.user.userId === requestedUserId;
-    const hasPermission = req.user.permissions.includes(permission);
+    const { userId } = req.params;
+    const isAuthorized = req.user.userId === userId || 
+                        req.user.permissions.includes(permission);
 
-    if (!isOwnUser && !hasPermission) {
-      return res.status(403).json({ 
-        message: 'You can only modify your own data unless you have admin permissions' 
-      });
+    if (!isAuthorized) {
+      res.status(403).json({ error: 'Unauthorized' });
+      return;
     }
 
     next();
   };
-}
+};

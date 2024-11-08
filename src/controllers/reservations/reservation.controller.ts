@@ -6,7 +6,7 @@ import type { ReservationFilters } from '../../models/types.js';
 
 export class ReservationController {
   // Crear reserva
-  async createReservation(req: Request, res: Response) {
+  async createReservation(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.body;
       const userId = req.user!.userId;
@@ -14,17 +14,19 @@ export class ReservationController {
       // Verificar disponibilidad del libro
       const book = await BookModel.findById(bookId);
       if (!book) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Book not found'
         });
+        return;
       }
 
       if (!book.isAvailable) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Book is not available for reservation'
         });
+        return;
       }
 
       // Crear reserva y actualizar disponibilidad del libro
@@ -37,12 +39,12 @@ export class ReservationController {
 
       await BookModel.findByIdAndUpdate(bookId, { isAvailable: false });
 
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         data: reservation
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error creating reservation'
       });
@@ -78,7 +80,7 @@ export class ReservationController {
   }
 
   // Obtener reservas del usuario
-  async getUserReservations(req: Request, res: Response) {
+  async getUserReservations(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.userId;
       const { status, page = 1, limit = 10 } = req.query;
@@ -99,7 +101,7 @@ export class ReservationController {
         ReservationModel.countDocuments(query)
       ]);
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: {
           reservations,
@@ -111,7 +113,7 @@ export class ReservationController {
         }
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error fetching reservations'
       });
@@ -119,7 +121,7 @@ export class ReservationController {
   }
 
   // Obtener historial de reservas de un libro
-  async getBookReservations(req: Request, res: Response) {
+  async getBookReservations(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       const { page = 1, limit = 10, status } = req.query;
@@ -140,7 +142,7 @@ export class ReservationController {
         ReservationModel.countDocuments(query)
       ]);
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: {
           reservations,
@@ -152,7 +154,7 @@ export class ReservationController {
         }
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error fetching book reservations'
       });
@@ -160,23 +162,25 @@ export class ReservationController {
   }
 
   // Finalizar reserva
-  async completeReservation(req: Request, res: Response) {
+  async completeReservation(req: Request, res: Response): Promise<void> {
     try {
       const { reservationId } = req.params;
 
       const reservation = await ReservationModel.findById(reservationId);
       if (!reservation) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Reservation not found'
         });
+        return;
       }
 
       if (reservation.status !== 'active') {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Reservation is not active'
         });
+        return;
       }
 
       // Actualizar reserva y libro
@@ -186,12 +190,12 @@ export class ReservationController {
 
       await BookModel.findByIdAndUpdate(reservation.bookId, { isAvailable: true });
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: reservation
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error completing reservation'
       });
@@ -199,32 +203,35 @@ export class ReservationController {
   }
 
   // Cancelar reserva
-  async cancelReservation(req: Request, res: Response) {
+  async cancelReservation(req: Request, res: Response): Promise<void> {
     try {
       const { reservationId } = req.params;
       const userId = req.user!.userId;
 
       const reservation = await ReservationModel.findById(reservationId);
       if (!reservation) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Reservation not found'
         });
+        return;
       }
 
       // Verificar que la reserva pertenezca al usuario o sea admin
       if (reservation.userId.toString() !== userId && !req.user!.permissions.includes('modify_users')) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: 'Not authorized to cancel this reservation'
         });
+        return;
       }
 
       if (reservation.status !== 'active') {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Reservation is not active'
         });
+        return;
       }
 
       // Actualizar reserva y libro
@@ -233,12 +240,12 @@ export class ReservationController {
 
       await BookModel.findByIdAndUpdate(reservation.bookId, { isAvailable: true });
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: reservation
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error cancelling reservation'
       });

@@ -5,16 +5,16 @@ import type { BookFilters } from '../../models/types.js';
 
 export class BookController {
   // Crear libro
-  async createBook(req: Request, res: Response) {
+  async createBook(req: Request, res: Response): Promise<void> {
     try {
       const book = await BookModel.create(req.body);
       
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         data: book
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error creating book'
       });
@@ -22,24 +22,25 @@ export class BookController {
   }
 
   // Obtener libro por ID
-  async getBookById(req: Request, res: Response) {
+  async getBookById(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       
       const book = await BookModel.findById(bookId);
       if (!book) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Book not found'
         });
+        return;
       }
 
-      return res.json({
+      res.json({
         success: true,
         data: book
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error fetching book'
       });
@@ -47,7 +48,7 @@ export class BookController {
   }
 
   // Buscar libros con filtros
-  async searchBooks(req: Request, res: Response) {
+  async searchBooks(req: Request, res: Response): Promise<void> {
     try {
       const {
         genre,
@@ -92,7 +93,7 @@ export class BookController {
         BookModel.countDocuments(query)
       ]);
 
-      return res.json({
+      res.json({
         success: true,
         data: {
           books,
@@ -104,7 +105,7 @@ export class BookController {
         }
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error searching books'
       });
@@ -112,7 +113,7 @@ export class BookController {
   }
 
   // Actualizar libro
-  async updateBook(req: Request, res: Response) {
+  async updateBook(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       const updates = req.body;
@@ -124,18 +125,19 @@ export class BookController {
       );
 
       if (!book) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Book not found'
         });
+        return;
       }
 
-      return res.json({
+      res.json({
         success: true,
         data: book
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error updating book'
       });
@@ -143,7 +145,7 @@ export class BookController {
   }
 
   // Soft delete de libro
-  async deleteBook(req: Request, res: Response) {
+  async deleteBook(req: Request, res: Response): Promise<void> {
     try {
       const { bookId } = req.params;
       
@@ -154,18 +156,19 @@ export class BookController {
       );
 
       if (!book) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'Book not found'
         });
+        return;
       }
 
-      return res.json({
+      res.json({
         success: true,
         message: 'Book successfully deactivated'
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error deactivating book'
       });

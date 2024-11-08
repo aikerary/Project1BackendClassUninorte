@@ -6,17 +6,18 @@ import { UserModel } from '../../models/users/user.model.js';
 
 export class UserController {
   // Registro de usuario
-  async register(req: Request, res: Response) {
+  async register(req: Request, res: Response): Promise<void> {
     try {
       const { email, password, name } = req.body;
 
       // Verificar si el usuario ya existe
       const existingUser = await UserModel.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Email already registered'
         });
+        return;
       }
 
       // Hashear la contraseña
@@ -34,7 +35,7 @@ export class UserController {
       // Generar token
       const token = generateToken(user);
 
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         data: {
           user: {
@@ -47,7 +48,7 @@ export class UserController {
         }
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error creating user'
       });
@@ -55,32 +56,34 @@ export class UserController {
   }
 
   // Login de usuario
-  async login(req: Request, res: Response) {
+  async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
 
       // Buscar usuario
       const user = await UserModel.findOne({ email, isActive: true });
       if (!user) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: 'Invalid credentials'
         });
+        return;
       }
 
       // Verificar contraseña
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           error: 'Invalid credentials'
         });
+        return;
       }
 
       // Generar token
       const token = generateToken(user);
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: {
           user: {
@@ -93,7 +96,7 @@ export class UserController {
         }
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error during login'
       });
@@ -101,7 +104,7 @@ export class UserController {
   }
 
   // Actualizar usuario
-  async updateUser(req: Request, res: Response) {
+  async updateUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
       const updates = req.body;
@@ -116,18 +119,19 @@ export class UserController {
       ).select('-password');
 
       if (!user) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'User not found'
         });
+        return;
       }
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: user
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error updating user'
       });
@@ -135,7 +139,7 @@ export class UserController {
   }
 
   // Soft delete de usuario
-  async deleteUser(req: Request, res: Response) {
+  async deleteUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
       
@@ -146,18 +150,19 @@ export class UserController {
       ).select('-password');
 
       if (!user) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'User not found'
         });
+        return;
       }
 
-      return res.json({
+      res.status(200).json({
         success: true,
         message: 'User successfully deactivated'
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error deactivating user'
       });
@@ -165,24 +170,25 @@ export class UserController {
   }
 
   // Obtener usuario por ID
-  async getUserById(req: Request, res: Response) {
+  async getUserById(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
       
       const user = await UserModel.findById(userId).select('-password');
       if (!user) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: 'User not found'
         });
+        return;
       }
 
-      return res.json({
+      res.status(200).json({
         success: true,
         data: user
       });
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: 'Error fetching user'
       });

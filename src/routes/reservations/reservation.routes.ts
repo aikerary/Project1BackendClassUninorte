@@ -1,9 +1,58 @@
+// src/routes/reservations/reservation.routes.ts
 import { Router } from 'express';
-import { createReservation, getReservations } from '../../controllers/reservations/reservation.controller';
-// ...existing code...
-const router = Router();
+import { ReservationController } from '../../controllers/reservations/reservation.controller.js';
+import { authenticateToken } from '../../middleware/auth.middleware.js';
+import { body, query } from 'express-validator';
 
-router.post('/', createReservation); // Create reservation (Requires authentication)
-router.get('/', getReservations); // Get reservations (Requires authentication)
+const router = Router();
+const reservationController = new ReservationController();
+
+// Validación de creación de reserva
+const createReservationValidation = [
+  body('bookId').isMongoId()
+];
+
+// Validación de búsqueda
+const searchValidation = [
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('status').optional().isIn(['active', 'completed', 'cancelled'])
+];
+
+// Todas las rutas de reservas requieren autenticación
+router.use(authenticateToken);
+
+// Rutas de reservas
+router.post(
+  '/',
+  createReservationValidation,
+  reservationController.createReservation
+);
+
+// Obtener reservas del usuario autenticado
+router.get(
+  '/my-reservations',
+  searchValidation,
+  reservationController.getUserReservations
+);
+
+// Obtener historial de reservas de un libro
+router.get(
+  '/book/:bookId',
+  searchValidation,
+  reservationController.getBookReservations
+);
+
+// Completar una reserva
+router.put(
+  '/:reservationId/complete',
+  reservationController.completeReservation
+);
+
+// Cancelar una reserva
+router.put(
+  '/:reservationId/cancel',
+  reservationController.cancelReservation
+);
 
 export default router;

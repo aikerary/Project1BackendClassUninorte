@@ -3,12 +3,10 @@
     // Configuración base
     "lib": ["ESNext"],
     "target": "ESNext",
-    "module": "NodeNext",
     "moduleDetection": "force",
     "allowJs": true,
-    
-    // Configuración específica para Node.js
-    "moduleResolution": "NodeNext",
+    "module": "ES2020",
+    "moduleResolution": "Node",
     "outDir": "./dist",
     "rootDir": "./src",
     

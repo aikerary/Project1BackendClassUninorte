@@ -1,35 +1,36 @@
+// src/index.ts
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import connectDB from './config/db.js';
-
-// Route imports
-import userRoutes from './routes/users/user.routes.js';
-import bookRoutes from './routes/books/book.routes.js';
-import reservationRoutes from './routes/reservations/reservation.routes.js';
+import { connectDB } from './config/db.js';
+import routes from './routes/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
-app.use(cors());
 app.use(helmet());
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/users', userRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/reservations', reservationRoutes);
+app.use('/api', routes);
 
-// Base route
-app.get('/', (req, res) => {
-    res.send('Biblioteca API is running');
+// Error handling
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    error: 'Something broke!'
+  });
 });
 
-app.listen(PORT, () => {
+// Initialize database and start server
+connectDB().then(() => {
+  app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Failed to connect to database:', err);
+  process.exit(1);
 });
