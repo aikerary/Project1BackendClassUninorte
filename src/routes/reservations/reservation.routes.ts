@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { ReservationController } from '../../controllers/reservations/reservation.controller.js';
 import { authenticateToken } from '../../middleware/auth.middleware.js';
-import { body, query } from 'express-validator';
+import { body, query, param } from 'express-validator';
 
 const router = Router();
 const reservationController = new ReservationController();
@@ -17,6 +17,11 @@ const searchValidation = [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional().isIn(['active', 'completed', 'cancelled'])
+];
+
+// Validación de parámetros de reserva
+const reservationParamValidation = [
+  param('reservationId').isMongoId()
 ];
 
 // Todas las rutas de reservas requieren autenticación
@@ -46,6 +51,7 @@ router.get(
 // Completar una reserva
 router.put(
   '/:reservationId/complete',
+  reservationParamValidation,
   reservationController.completeReservation
 );
 
